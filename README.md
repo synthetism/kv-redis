@@ -14,7 +14,7 @@
  /_/    \_\__,_|\__,_| .__/ \__\___|_|   
                      | |                 
                      |_|                 
-version: 1.0.0
+version: 1.0.1
 ```
 
 **Production-ready Redis adapter for @synet/kv with advanced features**
