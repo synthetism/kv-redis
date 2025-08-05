@@ -95,8 +95,7 @@ interface RedisStats {
 
 /**
  * Redis Adapter for @synet/kv
- * 
- * Enhanced version learning from memory adapter and queue patterns:
+ * Features:
  * - Robust connection management with proper lifecycle
  * - Efficient pipeline operations for batch processing  
  * - Comprehensive error handling and recovery
@@ -106,6 +105,7 @@ interface RedisStats {
  * - Zero dependencies beyond ioredis
  * - Unit Architecture compliant
  */
+
 export class RedisAdapter implements IKeyValueAdapter {
   readonly name = 'redis';
   readonly config: Record<string, unknown>;
@@ -182,11 +182,11 @@ export class RedisAdapter implements IKeyValueAdapter {
 
     // Enhanced event handling
     this.redis.on('connect', () => {
-      console.log('[RedisAdapter] Connected to Redis');
+      //console.log('[RedisAdapter] Connected to Redis');
     });
 
     this.redis.on('ready', () => {
-      console.log('[RedisAdapter] Redis connection ready');
+      //console.log('[RedisAdapter] Redis connection ready');
       this.isReady = true;
     });
 
@@ -198,12 +198,12 @@ export class RedisAdapter implements IKeyValueAdapter {
 
     this.redis.on('reconnecting', () => {
       this.stats.connection.reconnects++;
-      console.log('[RedisAdapter] Reconnecting to Redis...');
+      //console.log('[RedisAdapter] Reconnecting to Redis...');
     });
 
     this.redis.on('end', () => {
       this.isReady = false;
-      console.log('[RedisAdapter] Redis connection ended');
+      //console.log('[RedisAdapter] Redis connection ended');
     });
   }
 
@@ -215,18 +215,19 @@ export class RedisAdapter implements IKeyValueAdapter {
       throw new Error('[RedisAdapter] Adapter has been destroyed');
     }
 
-    if (this.redis.status !== 'ready') {
+    const validStatuses = ['ready', 'connect'];
+    if (!validStatuses.includes(this.redis.status)) {
       try {
         if (this.redis.status === 'wait') {
           await this.redis.connect();
         }
         // Wait for ready state
         let attempts = 0;
-        while (this.redis.status !== 'ready' && attempts < 50) {
+        while (!validStatuses.includes(this.redis.status) && attempts < 50) {
           await new Promise(resolve => setTimeout(resolve, 100));
           attempts++;
         }
-        if (this.redis.status !== 'ready') {
+        if (!validStatuses.includes(this.redis.status)) {
           throw new Error(`Connection timeout. Status: ${this.redis.status}`);
         }
       } catch (error) {
@@ -429,9 +430,10 @@ export class RedisAdapter implements IKeyValueAdapter {
   async waitUntilReady(timeout = 10000): Promise<void> {
     return new Promise((resolve, reject) => {
       const startTime = Date.now();
+      const validStatuses = ['ready', 'connect'];
       
       const checkReady = () => {
-        if (this.redis.status === 'ready' && !this.isDestroyed) {
+        if (validStatuses.includes(this.redis.status) && !this.isDestroyed) {
           resolve();
         } else if (Date.now() - startTime > timeout) {
           reject(new Error(`[RedisAdapter] Timeout waiting for Redis to be ready. Current status: ${this.redis.status}`));
